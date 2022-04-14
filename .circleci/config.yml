@@ -3,6 +3,18 @@ orbs:
   slack: circleci/slack@4.9.3
   
 commands:
+  notify_slack_error:
+    steps:
+      - slack/notify:
+          event: fail
+          template: basic_fail_1
+
+  notify_slack_pass:
+    steps:
+      - slack/notify:
+          event: pass
+          template: basic_success_1
+
   destroy-environment:
     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
     parameters:
@@ -68,6 +80,10 @@ jobs:
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
+      
+      - notify_slack_error
+      - notify_slack_pass
+
 
   test-frontend:
     docker:
@@ -80,7 +96,9 @@ jobs:
             cd frontend
             npm install
             npm run test
-                
+      - notify_slack_error
+      - notify_slack_pass
+
   test-backend:
     docker:
       - image: circleci/node:13.8.0
@@ -92,7 +110,9 @@ jobs:
             cd backend
             npm install
             npm run test
-              
+      - notify_slack_error
+      - notify_slack_pass
+   
   scan-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -105,6 +125,8 @@ jobs:
             npm install
             npm audit fix --audit-level=critical --force
             npm audit --audit-level=critical
+      - notify_slack_error
+      - notify_slack_pass
 
   scan-backend:
     docker:
@@ -118,6 +140,8 @@ jobs:
             npm install
             npm audit fix --audit-level=critical --force
             npm audit --audit-level=critical
+      - notify_slack_error
+      - notify_slack_pass
 
 
   notify:
@@ -133,7 +157,7 @@ jobs:
                   "fields": [
                     {
                       "type": "plain_text",
-                      "text": "*This is a text notification*",
+                      "text": "*Meaw*",
                       "emoji": true
                     }
                   ]
