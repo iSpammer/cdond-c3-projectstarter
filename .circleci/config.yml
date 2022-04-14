@@ -75,11 +75,11 @@ jobs:
     steps:
       - checkout
       - run:
-        name: Test front-end
-        command: |
-          cd frontend
-          npm install
-          npm run test
+          name: Test front-end
+          command: |
+            cd frontend
+            npm install
+            npm run test
                 
   test-backend:
     docker:
