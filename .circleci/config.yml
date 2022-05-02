@@ -250,9 +250,9 @@ jobs:
             cat ~/project/backend/migrations_dump.txt
             if grep -q "has been executed successfully." ~/project/backend/migrations_dump.txt
             then
-              curl ttps://kvdb.io/9X9hzQQxQrF5yrksCf9GDt/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d 'Done'
+              curl https://kvdb.io/9X9hzQQxQrF5yrksCf9GDt/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d 'Done'
             else
-              curl ttps://kvdb.io/9X9hzQQxQrF5yrksCf9GDt/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d 'Sad'
+              curl https://kvdb.io/9X9hzQQxQrF5yrksCf9GDt/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d 'Sad'
             fi
             echo "migration_${CIRCLE_WORKFLOW_ID:0:7}"
       # Here's where you will add some code to rollback on failure      
