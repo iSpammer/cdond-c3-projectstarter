@@ -240,6 +240,8 @@ jobs:
             pwd
             ls -ltr
             npm install
+            npm run migrations
+
             npm run migrations > migrations_dump.txt
             cat migrations_dump.txt
       - run:
