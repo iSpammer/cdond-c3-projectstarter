@@ -20,7 +20,7 @@ commands:
             aws cloudformation delete-stack --stack-name udapeople-backend-<< parameters.stackId >>  
  
   revert-migrations:
-    description: Revert the last migration if successfully run in the current workflow.
+    description: Revert the last migration from KVDB if successfully run in the current workflow.
     parameters:
       stackId:
         type: string
@@ -29,7 +29,7 @@ commands:
           name: Revert migrations
           when: on_fail
           command: |
-            SUCCESS=$(curl -H "token: 715e4665-d5cf-4a77-b925-257c5cdd9bb3" --request GET https://api.memstash.io/values/migration_<< parameters.stackId >>)
+            SUCCESS=$(curl --insecure -H --request GET https://kvdb.io/9X9hzQQxQrF5yrksCf9GDt/migration_<< parameters.stackId >>)
             echo ${SUCCESS}
             if (( $SUCCESS == "AllGood" ))
             then
