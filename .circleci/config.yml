@@ -219,54 +219,43 @@ jobs:
 
   run-migrations:
     docker:
-      # Docker image here that supports NodeJS
       - image: circleci/node:13.8.0
     steps:
-      # Checkout code from git
       - checkout
-      
-      - attach_workspace:
-          at: ~/
-      - run:
-          name: Install AWS CLI dependencies
-          working_directory: /tmp
-          command: |
-            sudo apt-get update
-            sudo apt install curl -y 
-            sudo apt install unzip
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install
-            /usr/local/bin/aws --version
-      - restore_cache:
-          keys: [backend-build]
+      # - restore_cache:
+      #     keys: ["backend-build"]
       - run:
           name: Run migrations
           command: |
-            pwd
+            echo ENVIRONMENT=production > "backend/.env"
+            echo TYPEORM_CONNECTION=postgres >> "backend/.env"
+            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
+            echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> "backend/.env"
+            echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> "backend/.env"
+            echo NODE_ENV=production >> "backend/.env"
+            echo TYPEORM_HOST=$TYPEORM_HOST >> "backend/.env"
+            echo TYPEORM_PORT=$TYPEORM_PORT >> "backend/.env"
+            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> "backend/.env"
+            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
+            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> "backend/.env"
+            # ---
             cd backend
-            pwd
-            ls -ltr
-            npm install
-            npm audit fix --force
-            npm run migrations > migrations_dump.txt
-            cat migrations_dump.txt
-      # - run:
-      #     name: Send migration results to kvdb
-      #     command: |
-      #       cat ~/project/backend/migrations_dump.txt
-      #       if grep -q "has been executed successfully." ~/project/backend/migrations_dump.txt
-      #       then
-      #         curl ttps://kvdb.io/9X9hzQQxQrF5yrksCf9GDt/migration_udapeople-xd47467dhjppmz437  -d '1'
-      #       else
-      #         curl ttps://kvdb.io/9X9hzQQxQrF5yrksCf9GDt/migration_udapeople-xd47467dhjppmz437  -d '0'
-      #       fi
-      #       echo "migration_udapeople-xd47467dhjppmz437"
-      # # Here's where you will add some code to rollback on failure      
+            sudo npm install
+            # npm audit fix --audit-level=critical --force
+            # sudo npm run build
+            sudo npm run migrations > migration.log
+            cat migration.log
+            migration_status=$(cat migration.log | grep -c "has been executed successfully")
+            if [ $migration_status > 0 ]; then exit 0; else exit 1; fi;
+      - run:
+          name: Send migration results to memstash
+          command: |
+            curl ttps://kvdb.io/9X9hzQQxQrF5yrksCf9GDt/migration_udapeople-xd47467dhjppmz437  -d 'Done'
+
+      - revert-migrations
       - destroy-environment:
           stackId: udapeople-xd47467dhjppmz437
-
-
+  
 
   notify:
     docker:
