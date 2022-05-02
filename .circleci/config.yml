@@ -189,6 +189,33 @@ jobs:
       - destroy-environment:
           stackId: udapeople-xd47467dhjppmz437
 
+  
+  configure-infrastructure:
+    docker:
+      # Docker image here that supports Ansible
+      - image: python:3.9.0-alpine
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/      
+      - add_ssh_keys:
+          fingerprints: ["c3:35:83:c8:2a:cb:30:f6:21:2f:34:51:a3:18:b5:48"]
+      - run:
+          name: Install dependencies
+          working_directory: ./.circleci/ansible
+          command: |
+            apk add --update ansible
+            ansible --version
+      - run:
+          name: Configure server
+          working_directory: ./.circleci/ansible
+          command: |
+            pwd && ls -ltr
+            cat inventory.txt
+            ansible-playbook -i inventory.txt configure-server.yml
+      - destroy-environment:
+          stackId: udapeople-xd47467dhjppmz437
+  
 
   notify:
     docker:
