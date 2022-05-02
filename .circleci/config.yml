@@ -222,11 +222,16 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
-      # - restore_cache:
-      #     keys: ["backend-build"]
+      - restore_cache:
+          keys:
+            - backend-build
       - run:
           name: Run migrations
           command: |
+            sudo apt-get update && sudo apt-get install -yy less
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
             echo ENVIRONMENT=production > "backend/.env"
             echo TYPEORM_CONNECTION=postgres >> "backend/.env"
             echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
@@ -238,26 +243,22 @@ jobs:
             echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> "backend/.env"
             echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
             echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> "backend/.env"
-            # ---
             cd backend
-            sudo npm install
-            npm audit fix --audit-level=critical --force
-            
-            pm2 start npm -- run "start:dev"
-            sudo npm run migrations > migration.log
-            cat migration.log
-            migration_status=$(cat migration.log | grep -c "has been executed successfully")
-            if [ $migration_status > 0 ]; then exit 0; else exit 1; fi;
+            npm install
+            npm run migrations > migrations_dump.txt
+            cat migrations_dump.txt
       - run:
-          name: Send migration results to memstash
+          name: Send migration results to kvdb
           command: |
-            curl ttps://kvdb.io/9X9hzQQxQrF5yrksCf9GDt/migration_udapeople-xd47467dhjppmz437  -d 'Done'
-
-      - revert-migrations
+            cat ./backend/migrations_dump.txt
+            if grep -q "has been executed successfully" ./backend/migrations_dump.txt
+            then
+                echo "DB migration was successful, Updating KVDB..."
+                curl --insecure -v https://kvdb.io/9X9hzQQxQrF5yrksCf9GDt/migration_  -d 'done'
+            fi
       - destroy-environment:
-          stackId: udapeople-xd47467dhjppmz437
-  
-
+          stackId: "udapeople-xd47467dhjppmz437"
+      
   notify:
     docker:
       - image: 'cimg/base:stable'
