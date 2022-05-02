@@ -247,9 +247,9 @@ jobs:
             cat ~/project/backend/migrations_dump.txt
             if grep -q "has been executed successfully." ~/project/backend/migrations_dump.txt
             then
-              curl -H "Content-Type: text/plain" -H "token: 715e4665-d5cf-4a77-b925-257c5cdd9bb3" --request PUT --data "AllGood" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
+              curl ttps://kvdb.io/9X9hzQQxQrF5yrksCf9GDt/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d 'Done'
             else
-              curl -H "Content-Type: text/plain" -H "token: 715e4665-d5cf-4a77-b925-257c5cdd9bb3" --request PUT --data "OhDear" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
+              curl ttps://kvdb.io/9X9hzQQxQrF5yrksCf9GDt/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d 'Sad'
             fi
             echo "migration_${CIRCLE_WORKFLOW_ID:0:7}"
       # Here's where you will add some code to rollback on failure      
@@ -338,8 +338,7 @@ jobs:
             npm install
       # Add ssh keys with fingerprint
       - add_ssh_keys:
-          # add the svr ssh key fingersprint (i added the ssh from the pem file into circleci manaually)
-          fingerprints: ["5e:e5:8c:b1:6c:3b:b7:98:e9:f0:76:47:c7:22:6b:eb"]
+          fingerprints: ["c3:35:83:c8:2a:cb:30:f6:21:2f:34:51:a3:18:b5:48"]
       - run:
           name: Install dependencies
           working_directory: ./.circleci/ansible
