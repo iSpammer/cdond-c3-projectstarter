@@ -157,17 +157,17 @@ jobs:
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
-              --tags "project=udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
+              --tags "project=udapeople-backend-udapeople-xd47467dhjppmz437" \
+              --stack-name "udapeople-backend-udapeople-xd47467dhjppmz437" \
+              --parameter-overrides ID="udapeople-xd47467dhjppmz437"  
       - run:
           name: Ensure front-end infrastructure exist
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
-              --tags "project=udapeople-frontend--${CIRCLE_WORKFLOW_ID:0:7}" \
-              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" 
+              --tags "project=udapeople-frontend--udapeople-xd47467dhjppmz437" \
+              --stack-name "udapeople-frontend-udapeople-xd47467dhjppmz437" \
+              --parameter-overrides ID="udapeople-xd47467dhjppmz437" 
       - run:
           name: Add back-end ip to ansible inventory
           working_directory: ./.circleci/ansible
@@ -176,7 +176,7 @@ jobs:
             ls -altr
             aws ec2 describe-instances \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --filters "Name=tag:project,Values=udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --filters "Name=tag:project,Values=udapeople-backend-udapeople-xd47467dhjppmz437" \
               --output text >> ~/project/.circleci/ansible/inventory.txt
             echo "inventory.txt"
             cat ~/project/.circleci/ansible/inventory.txt
@@ -185,7 +185,7 @@ jobs:
           paths:
             - project/.circleci/ansible/inventory.txt
       - destroy-environment:
-          stackId: ${CIRCLE_WORKFLOW_ID:0:7}
+          stackId: udapeople-xd47467dhjppmz437
 
 
   notify:
