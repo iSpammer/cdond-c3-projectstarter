@@ -1,32 +1,18 @@
 ---
-
-  # Update/upgrade packages.
-  # Install nodejs, npm, and pm2.
- 
-- name: "update apt packages."
-  become: yes
-  apt:
-    update_cache: yes
-
 - name: "upgrade packages"
-  become: yes
+  become: true
   apt:
-    upgrade: yes
+    upgrade: "yes"
 
-- name: remove dependencies that are no longer required
-  become: yes
+- name: "install dependencies"
+  become: true
   apt:
-    autoremove: yes
-
-- name: "install dependencies."
-  become: yes
-  apt:
-    name: ["ca-certificates", "nodejs", "npm"]
+    name: ["nodejs", "npm"]
     state: latest
     update_cache: yes
 
 - name: "install pm2"
-  become: yes
+  become: true
   npm:
     name: pm2
     global: yes
