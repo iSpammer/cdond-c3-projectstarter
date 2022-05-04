@@ -5,7 +5,7 @@ orbs:
   slack: circleci/slack@4.5.0
 
 commands:
-   notify_slack_error:
+  notify_slack_error:
     steps:
       - slack/notify:
           event: fail
