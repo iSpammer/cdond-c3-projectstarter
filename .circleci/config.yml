@@ -271,54 +271,30 @@ jobs:
     docker:
       - image: circleci/node:13.8.0
     steps:
-      # Checkout code from git
       - checkout
-      - restore_cache:
-          keys: [frontend-build]
       - attach_workspace:
-          at: ~/
-      - run:
-          name: Installing AWS CLI annd dependencies
-          working_directory: /tmp
-          command: |
-            sudo apt-get update
-            sudo apt install curl -y 
-            sudo apt install unzip
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install
-            /usr/local/bin/aws --version
+          at: .circleci/ansible
       - run:
           name: Installing libs
-          command: sudo apt-get install -y tar gzip
-      - run:
-          name: Install NPM
           command: |
-            pwd
+            apk update
+            apk upgrade
+            apk add --update gzip curl nodejs npm bash
+            pip install awscli
+      - run:
+          name: Get backend url
+          command: |
+            BACKEND_SERVER=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --filters "Name=tag:project,Values=udapeople-api-${CIRCLE_WORKFLOW_ID:0:7}" --output text )
+            API_URL="http://${BACKEND_SERVER}:3030"
+            echo "API_URL=${API_URL}" >> frontend/.env
+      - run:
+          name: Deploy frontend objects
+          command: |
             cd frontend
-            pwd
-            ls -ltr
             npm install
-      - run:
-          name: getting backend url link
-          command: |
-            export BACKEND_IP=$(aws ec2 describe-instances \
-              --filters "Name=tag:project,Values=udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --query "Reservations[*].Instances[*].PublicIpAddress" --output text)
-            export API_URL="http://${BACKEND_IP}:3030"
-            echo "${API_URL}"
-            echo "${API_URL}" >> frontend/.env
-            cat frontend/.env 
-      - run:
-          name: Deployinng frontend files
-          command: |
-            cd frontend
-            export API_URL=$(cat .env)
-            echo "back end API_URL from .env is ${API_URL}"
             npm run build
             tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
             aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
-      # Here's where you will add some code to rollback on failure      
       - destroy-environment:
           stackId: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations:
@@ -373,7 +349,6 @@ jobs:
             cat inventory.txt
             ansible-playbook -i inventory.txt deploy-backend.yml
 
-      # Here's where you will add some code to rollback on failure  
       - destroy-environment:
           stackId: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations:
