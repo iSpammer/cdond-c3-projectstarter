@@ -420,7 +420,7 @@ workflows:
           requires: [test-backend, scan-backend]
           filters:
             branches:
-              only: [main]
+              only: [master]
       - deploy-frontend-infrastructure:
           requires: [test-frontend, scan-frontend]
           filters:
