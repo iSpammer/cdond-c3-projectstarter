@@ -5,11 +5,11 @@ orbs:
   slack: circleci/slack@4.2.1
 commands:
   destroy-environment:
-    description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
+    description: remove backend and frontend specified stacks ids .
   
     steps:
       - run:
-          name: Destroy environments
+          name: remove environments
           when: on_fail
           command: |
             aws s3 rm --recursive s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}
@@ -18,7 +18,7 @@ commands:
             aws cloudformation delete-stack \
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
   revert-migrations:
-    description: Revert the last migration if successfully run in the current workflow.
+    description: Revert the last migration .
     parameters:
     steps:
       - run:
@@ -39,7 +39,7 @@ jobs:
     steps:
       - checkout
       - run: 
-          name: Build front-end
+          name: Build and run frontend
           command: |
             cd frontend
             npm install
@@ -58,7 +58,7 @@ jobs:
     steps:
       - checkout
       - run: 
-          name: Back-end build
+          name: Build and run backend
           command: |
             cd backend
             npm install
@@ -77,7 +77,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Front-end test build
+          name: test front end for errors
           command: |
             cd frontend
             npm install
@@ -94,7 +94,7 @@ jobs:
       - restore_cache:
           keys: [backend-build]
       - run:
-          name: Back-end test build
+          name: test back end for errors
           command: |
             cd backend
             npm install
@@ -109,7 +109,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Audit front end
+          name: Audit frontend
           command: |
             cd frontend
             npm install
@@ -131,7 +131,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Ensure back-end infrastructure exsist
+          name: check backend infrastructure
           command: |
             aws cloudformation deploy \
             --template-file .circleci/files/backend.yml \
@@ -139,7 +139,7 @@ jobs:
             --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7} \
             --tags project=udapeople
       - run:
-          name: Ensure front-end infracture exsist
+          name: check frontend infracture
           command: |
             aws cloudformation deploy \
             --template-file .circleci/files/frontend.yml \
@@ -147,7 +147,7 @@ jobs:
             --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7} \
             --tag project=udapeople
       - run:
-          name: Retrive beckend ip (save it to ansible inventory)
+          name: Retrive beckend ip for ansible inv file
           command: |
             BACKEND_PUBLIC_IP=$(aws ec2 describe-instances \
               --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
@@ -172,7 +172,7 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
-          name: Install dependencies
+          name: Install dependencies and libs
           command: |
             cd ~/project/.circleci/ansible
             apk add --update ansible
@@ -225,12 +225,12 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install dependencies
+          name: Install dependencies and some libs
           command: |
             apk add --update tar gzip ansible nodejs npm curl
             pip3 install awscli
       - run:
-          name: Get backend url
+          name: saving backend url in the fronnt end .env
           command: |
             BACKEND_IP=$(aws ec2 describe-instances \
             --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
@@ -241,7 +241,7 @@ jobs:
             
             echo "API_URL=$API_URL" >> frontend/.env
       - run:
-          name: Deploy frontend objects
+          name: Deploying frontend files
           command: |
             cd frontend
             npm install
@@ -260,7 +260,7 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
-          name: Install dependencies
+          name: Install dependencies and some libs
           command: |
             apk add --update ansible nodejs npm rsync openssh
             pip install awscli
@@ -280,7 +280,7 @@ jobs:
       - attach_workspace:
             at: ~/
       - run:
-          name: Install dependencies
+          name: Install dependencies and some libs
           command: |
             # Your code here
             apk update
@@ -289,25 +289,25 @@ jobs:
             apk add curl
             /usr/local/bin/python -m pip install --upgrade pip    
       - run:
-          name: Install node
+          name: Install nodejs
           command: |
             apk add --update nodejs nodejs-npm
             node --version
             npm --version
       - run:
-          name: Install aws
+          name: Install aws cli
           command: |    
             pip install awscli --upgrade   
             aws --version       
           
       - run:
-          name: Get backend url
+          name: Getting backend url
           command: |
             # your code here
             export BACKEND_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
             echo $BACKEND_IP
       - run:
-          name: Backend smoke test.
+          name: Backend smoke cigarette test.
           command: |
             # your code here
             export BACKEND_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
@@ -321,7 +321,7 @@ jobs:
                 return 1
             fi
       - run:
-          name: Frontend smoke test.
+          name: Frontend smoke ciggarete test.
           command: |
             # your code here
             URL="https://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3.us-east-1.amazonaws.com/index.html#/employees"             
@@ -340,7 +340,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Update cloudfront distribution
+          name: Update cloudfront dist
           command: |
             aws cloudformation update-stack \
               --use-previous-template --stack-name InitialStack \
@@ -351,7 +351,7 @@ jobs:
         - image: amazon/aws-cli
       steps:
         - run:
-            name: Clean old stacks
+            name: remove old stacks
             command: |
               # Fetch the Old workflow ID
               export OldWorkflowID=$(aws cloudformation \
