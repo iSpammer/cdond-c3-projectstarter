@@ -4,70 +4,34 @@ orbs:
   aws-cli: circleci/aws-cli@2.0.3
   slack: circleci/slack@4.2.1
 commands:
-  install_awscli:
-    description: Install AWS CLI v2
-    steps:
-      - run:
-          name: Install AWS CLI v2
-          command: |
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install
-
-  install_ansible:
-    description: Install Ansible
-    steps:
-      - run:
-          name: Install Ansible
-          command: |
-            sudo apt update
-            sudo apt install ansible
-
-  install_nodejs:
-    description: Install Node.js 18
-    steps:
-      - run:
-          name: Install Node.js 18
-          command: |
-            curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-            sudo apt install -y nodejs
-
   destroy-environment:
     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
-    parameters:
-      Workflow_ID:
-        type: string
-        default: ${CIRCLE_WORKFLOW_ID:0:7}
+  
     steps:
       - run:
           name: Destroy environments
           when: on_fail
           command: |
-            aws cloudformation delete-stack --stack-name udapeople-backend-<< parameters.Workflow_ID >>
-            aws s3 rm s3://udapeople-<<parameters.Workflow_ID>> --recursive
-            aws cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.Workflow_ID >>
-
+            aws s3 rm --recursive s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}
+            aws cloudformation delete-stack \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}"
+            aws cloudformation delete-stack \
+              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
   revert-migrations:
-    description: Revert the last migration
+    description: Revert the last migration if successfully run in the current workflow.
     parameters:
-      Workflow_ID:
-        type: string
-        default: ${CIRCLE_WORKFLOW_ID:0:7}
     steps:
       - run:
           name: Revert migrations
           when: on_fail
           command: |
-            SUCCESS=$(curl --insecure  https://kvdb.io/${KVDB_BUCKET}/migration_<< parameters.Workflow_ID >>)
-            # Logic for reverting the database state
+            SUCCESS=$(curl --insecure  https://kvdb.io/GxHhCz2fFMCPcvmo4u3Avn/_${CIRCLE_WORKFLOW_ID:0:7})
             if (( $SUCCESS == 1 ));
             then
-              cd ~/project/backend
-              npm install
-              npm run migration:revert
-            fi
-
-
+                cd ~/project/backend
+                npm install
+                npm run migration:revert
+            fi             
 jobs:
   build-frontend:
     docker:
@@ -139,7 +103,6 @@ jobs:
           channel: udacity
           event: fail
           template: basic_fail_1              
-  
   scan-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -162,7 +125,6 @@ jobs:
             cd backend
             npm install
             npm audit fix --audit-level=critical
-  
   deploy-infrastructure:
     docker:
       - image: amazon/aws-cli
@@ -206,7 +168,7 @@ jobs:
     steps:
       - checkout
       - add_ssh_keys:
-          fingerprints: ['c3:35:83:c8:2a:cb:30:f6:21:2f:34:51:a3:18:b5:48'] 
+          fingerprints: ['6b:00:a1:a9:dd:06:13:5f:68:25:e5:da:b4:e5:b5:43'] 
       - attach_workspace:
           at: ~/
       - run:
@@ -220,8 +182,6 @@ jobs:
             cd ~/project/.circleci/ansible
             ansible-playbook -i inventory.txt configure-server.yml
       - destroy-environment
- 
- 
   run-migration:
     docker:
       - image: circleci/node:13.8.0
@@ -244,93 +204,59 @@ jobs:
               curl https://kvdb.io/GxHhCz2fFMCPcvmo4u3Avn/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
             fi
       - destroy-environment
-
   deploy-frontend:
     docker:
-      - image: cimg/base:stable
+      - image: python:3.7-alpine3.11
     steps:
       - checkout
       - run:
-          name: Install AWS CLI v2
-          command: |
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install      
-      - run:
-          name: Install Node.js 18
-          command: |
-            curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-            sudo apt install -y nodejs
-      - restore_cache:
-          keys: [frontend-deps]
-      - run:
           name: Install dependencies
           command: |
-            cd frontend
-            npm install
+            apk add --update tar gzip ansible nodejs npm curl
+            pip3 install awscli
       - run:
           name: Get backend url
           command: |
-            BACKEND_PUBLIC_IP=$(aws ec2 describe-instances \
-              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --output text)
-
-            echo "API_URL=http://${BACKEND_PUBLIC_IP}:3030" >> frontend/.env
-            cat frontend/.env
+            BACKEND_IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo $API_URL
+            
+            echo "API_URL=$API_URL" >> frontend/.env
       - run:
           name: Deploy frontend objects
           command: |
             cd frontend
             npm install
             npm run build
-            aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
-
+            cd dist
+            aws s3 sync . "s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}" --delete
       - destroy-environment
-      - revert-migrations
-
+      - revert-migrations      
   deploy-backend:
     docker:
-      - image: cimg/base:stable
+      - image: python:3.7-alpine3.11
     steps:
       - checkout
-      - install_awscli
-      - install_ansible
-      - install_nodejs
       - add_ssh_keys:
-          fingerprints: ["c3:35:83:c8:2a:cb:30:f6:21:2f:34:51:a3:18:b5:48"]
+          fingerprints: ['6b:00:a1:a9:dd:06:13:5f:68:25:e5:da:b4:e5:b5:43'] 
       - attach_workspace:
           at: ~/
-      - restore_cache:
-          keys: [backend-deps]
       - run:
           name: Install dependencies
           command: |
-            cd backend
-            npm install
-      - run:
-          name: Package Backend
-          command: |
-            cd backend
-            npm run build
-            tar -czf artifact.tar.gz dist/* package*
-
-            cd ..
-            cp backend/artifact.tar.gz .circleci/ansible/roles/deploy/files
+            apk add --update ansible nodejs npm rsync openssh
+            pip install awscli
       - run:
           name: Deploy backend
           command: |
-            export TYPEORM_MIGRATIONS_DIR=./migrations
-            export TYPEORM_ENTITIES=./modules/domain/**/*.entity{.ts,.js}
-            export TYPEORM_MIGRATIONS=./migrations/*.ts
-
-            cd .circleci/ansible
-            cat inventory.txt
+            cd ~/project/.circleci/ansible
+            export ANSIBLE_HOST_KEY_CHECKING=False
             ansible-playbook -i inventory.txt deploy-backend.yml
-
       - destroy-environment
-      - revert-migrations
-
+      - revert-migrations      
   smoke-test:
     docker:
       - image: python:3.7-alpine3.11
