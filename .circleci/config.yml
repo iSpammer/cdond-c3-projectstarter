@@ -194,6 +194,7 @@ jobs:
             npm install
             npm run migrations > migration_output
             echo "Migration Result:------"
+            cat migration_output 
             
       - run:
           name: check results
